@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+   <head>
+      <meta charset="UTF-8" />
+      <title>Generador de Foreground Adaptive Icon</title>
+      <style>
+         * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+         }
+
+         body {
+            font-family: "Segoe UI", sans-serif;
+            background: #121a2a;
+            color: #e0e6f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+         }
+
+         header {
+            text-align: center;
+            padding: 30px 20px;
+            background: #1f2a44;
+            width: 100%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+         }
+
+         header h1 {
+            font-size: 2rem;
+            color: #ffffff;
+         }
+
+         main {
+            background: #1f2a44;
+            margin: 30px;
+            padding: 30px 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 500px;
+         }
+
+         label {
+            display: flex;
+            flex-direction: column;
+            margin: 15px 0;
+            font-size: 0.95rem;
+         }
+
+         input[type="file"],
+         input[type="color"],
+         input[type="range"],
+         input[type="number"],
+         button {
+            margin-top: 8px;
+            padding: 10px;
+            border-radius: 12px;
+            border: none;
+            font-size: 0.95rem;
+         }
+
+         input[type="range"] {
+            width: 100%;
+         }
+         input[type="color"],
+         input[type="file"],
+         input[type="number"] {
+            width: 100%;
+         }
+
+         button {
+            background: #3b5ca8;
+            color: #fff;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+         }
+
+         button:hover {
+            background: #5574c2;
+         }
+
+         canvas {
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #3b5ca8;
+            border-radius: 15px;
+            background: transparent;
+         }
+
+         .flex-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+         }
+
+         span.valueDisplay {
+            margin-left: 8px;
+            font-weight: bold;
+            color: #a0c4ff;
+         }
+      </style>
+   </head>
+   <body>
+      <header>
+         <h1>Foreground Adaptive Icon</h1>
+      </header>
+
+      <main>
+         <label>
+            Subir logo:
+            <input type="file" id="logoInput" accept="image/*" />
+         </label>
+
+         <label class="flex-row">
+            <span>Fondo transparente</span>
+            <input type="checkbox" id="transparentBg" />
+         </label>
+
+         <label id="bgColorLabel">
+            Color de fondo:
+            <input type="color" id="bgColor" value="#ffffff" />
+         </label>
+
+         <label>
+            Escala del foreground:
+            <span class="valueDisplay" id="scaleValue">0.66</span>
+            <input
+               type="range"
+               id="scaleSlider"
+               min="0.1"
+               max="1"
+               step="0.01"
+               value="0.66"
+            />
+         </label>
+
+         <label>
+            Tamaño de exportación (pixeles):
+            <input
+               type="number"
+               id="exportSize"
+               value="432"
+               min="16"
+               max="4096"
+            />
+         </label>
+
+         <button id="generateBtn">Generar Foreground</button>
+
+         <canvas id="iconCanvas" width="432" height="432"></canvas>
+
+         <button id="downloadBtn">Descargar PNG</button>
+      </main>
+
+      <script>
+         const logoInput = document.getElementById("logoInput");
+         const bgColor = document.getElementById("bgColor");
+         const bgColorLabel = document.getElementById("bgColorLabel");
+         const transparentBg = document.getElementById("transparentBg");
+         const generateBtn = document.getElementById("generateBtn");
+         const downloadBtn = document.getElementById("downloadBtn");
+         const canvas = document.getElementById("iconCanvas");
+         const ctx = canvas.getContext("2d");
+
+         const scaleSlider = document.getElementById("scaleSlider");
+         const scaleValue = document.getElementById("scaleValue");
+         const exportSize = document.getElementById("exportSize");
+
+         let logoImg = null;
+
+         // Mostrar/ocultar selector de color según fondo transparente
+         transparentBg.addEventListener("change", () => {
+            bgColorLabel.style.display = transparentBg.checked
+               ? "none"
+               : "flex";
+         });
+
+         // Actualizar valor del slider en pantalla
+         scaleSlider.addEventListener("input", () => {
+            scaleValue.textContent = scaleSlider.value;
+         });
+
+         // Cargar imagen
+         logoInput.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+               logoImg = new Image();
+               logoImg.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+         });
+
+         // Función para generar foreground
+         function generateForeground() {
+            if (!logoImg) {
+               alert("Sube un logo primero");
+               return;
+            }
+
+            let size = parseInt(exportSize.value);
+            if (isNaN(size) || size < 16) size = 432; // mínimo seguro
+            canvas.width = size;
+            canvas.height = size;
+
+            // Fondo
+            if (transparentBg.checked) {
+               ctx.clearRect(0, 0, canvas.width, canvas.height);
+            } else {
+               ctx.fillStyle = bgColor.value;
+               ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // Escala del foreground
+            const scale = parseFloat(scaleSlider.value);
+            const fgSize = canvas.width * scale;
+            const x = (canvas.width - fgSize) / 2;
+            const y = (canvas.height - fgSize) / 2;
+
+            ctx.drawImage(logoImg, x, y, fgSize, fgSize);
+         }
+
+         // Eventos
+         generateBtn.addEventListener("click", generateForeground);
+
+         downloadBtn.addEventListener("click", () => {
+            const link = document.createElement("a");
+            link.download = `foreground_${exportSize.value}px.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+         });
+      </script>
+   </body>
+</html>
