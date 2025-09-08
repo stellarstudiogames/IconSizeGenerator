@@ -87,7 +87,12 @@
             display: block;
             margin: 20px auto;
             border: 2px solid #3b5ca8;
+            border-radius: 15px;
             background: transparent;
+
+            /* Tamaño fijo en pantalla */
+            width: 300px;
+            height: 300px;
          }
 
          .flex-row {
@@ -139,27 +144,27 @@
 
          <label>
             Redondeo del foreground (logo):
-            <span class="valueDisplay" id="roundValue">0</span>
+            <span class="valueDisplay" id="roundValue">0.1</span>
             <input
                type="range"
                id="roundSlider"
                min="0"
                max="0.5"
                step="0.01"
-               value="0"
+               value="0.1"
             />
          </label>
 
          <label>
             Redondeo del borde completo:
-            <span class="valueDisplay" id="borderRoundValue">0</span>
+            <span class="valueDisplay" id="borderRoundValue">0.05</span>
             <input
                type="range"
                id="borderRoundSlider"
                min="0"
                max="0.5"
                step="0.01"
-               value="0"
+               value="0.05"
             />
          </label>
 
@@ -176,7 +181,7 @@
 
          <button id="generateBtn">Generar Foreground</button>
 
-         <canvas id="iconCanvas" width="432" height="432"></canvas>
+         <canvas id="iconCanvas"></canvas>
 
          <button id="downloadBtn">Descargar PNG</button>
       </main>
@@ -289,6 +294,8 @@
 
             let size = parseInt(exportSize.value);
             if (isNaN(size) || size < 16) size = 432;
+
+            // Ajustar resolución interna para exportar
             canvas.width = size;
             canvas.height = size;
 
