@@ -134,7 +134,33 @@
                min="0.1"
                max="1"
                step="0.01"
-               value="0.66"
+               value="0.67"
+            />
+         </label>
+
+         <label>
+            Redondeo del foreground (logo):
+            <span class="valueDisplay" id="roundValue">0</span>
+            <input
+               type="range"
+               id="roundSlider"
+               min="0"
+               max="0.5"
+               step="0.01"
+               value="0"
+            />
+         </label>
+
+         <label>
+            Redondeo del borde completo:
+            <span class="valueDisplay" id="borderRoundValue">0</span>
+            <input
+               type="range"
+               id="borderRoundSlider"
+               min="0"
+               max="0.5"
+               step="0.01"
+               value="0"
             />
          </label>
 
@@ -168,6 +194,13 @@
 
          const scaleSlider = document.getElementById("scaleSlider");
          const scaleValue = document.getElementById("scaleValue");
+
+         const roundSlider = document.getElementById("roundSlider");
+         const roundValue = document.getElementById("roundValue");
+
+         const borderRoundSlider = document.getElementById("borderRoundSlider");
+         const borderRoundValue = document.getElementById("borderRoundValue");
+
          const exportSize = document.getElementById("exportSize");
 
          let logoImg = null;
@@ -179,9 +212,15 @@
                : "flex";
          });
 
-         // Actualizar valor del slider en pantalla
+         // Actualizar valores de sliders
          scaleSlider.addEventListener("input", () => {
             scaleValue.textContent = scaleSlider.value;
+         });
+         roundSlider.addEventListener("input", () => {
+            roundValue.textContent = roundSlider.value;
+         });
+         borderRoundSlider.addEventListener("input", () => {
+            borderRoundValue.textContent = borderRoundSlider.value;
          });
 
          // Cargar imagen
@@ -196,7 +235,53 @@
             reader.readAsDataURL(file);
          });
 
-         // Función para generar foreground
+         // Dibujar rectángulo redondeado (para el fondo)
+         function drawRoundedRect(x, y, width, height, radius, color) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(
+               x + width,
+               y + height,
+               x + width - radius,
+               y + height
+            );
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+         }
+
+         // Dibujar imagen con esquinas redondeadas (foreground)
+         function drawRoundedImage(img, x, y, width, height, radius) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(
+               x + width,
+               y + height,
+               x + width - radius,
+               y + height
+            );
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.clip();
+            ctx.drawImage(img, x, y, width, height);
+            ctx.restore();
+         }
+
+         // Generar foreground
          function generateForeground() {
             if (!logoImg) {
                alert("Sube un logo primero");
@@ -204,25 +289,27 @@
             }
 
             let size = parseInt(exportSize.value);
-            if (isNaN(size) || size < 16) size = 432; // mínimo seguro
+            if (isNaN(size) || size < 16) size = 432;
             canvas.width = size;
             canvas.height = size;
 
-            // Fondo
-            if (transparentBg.checked) {
-               ctx.clearRect(0, 0, canvas.width, canvas.height);
-            } else {
-               ctx.fillStyle = bgColor.value;
-               ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const borderRadius = size * parseFloat(borderRoundSlider.value);
+
+            ctx.clearRect(0, 0, size, size);
+
+            if (!transparentBg.checked) {
+               drawRoundedRect(0, 0, size, size, borderRadius, bgColor.value);
             }
 
             // Escala del foreground
             const scale = parseFloat(scaleSlider.value);
-            const fgSize = canvas.width * scale;
-            const x = (canvas.width - fgSize) / 2;
-            const y = (canvas.height - fgSize) / 2;
+            const fgSize = size * scale;
+            const x = (size - fgSize) / 2;
+            const y = (size - fgSize) / 2;
 
-            ctx.drawImage(logoImg, x, y, fgSize, fgSize);
+            // Radio de esquinas del foreground
+            const fgRadius = fgSize * parseFloat(roundSlider.value);
+            drawRoundedImage(logoImg, x, y, fgSize, fgSize, fgRadius);
          }
 
          // Eventos
